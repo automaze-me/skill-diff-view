@@ -619,6 +619,7 @@ JS = """
   var hasMd=!!document.querySelector('.view.md'), btn={inline:'m-inline',side:'m-side',md:'m-md'};
   function off(){return bar.offsetHeight+60}
   function scrollToEl(t){window.scrollTo({top:t.getBoundingClientRect().top+window.scrollY-off(),behavior:'smooth'})}
+  function newText(h){var c=h.cloneNode(true);c.querySelectorAll('del').forEach(function(d){d.remove()});return c.textContent.trim()}
   function markChanges(el,fid){
     var BLOCK='p,li,tr,h1,h2,h3,h4,h5,h6,pre,blockquote,dt,dd', seen=[];
     el.querySelectorAll('ins,del').forEach(function(m){var k=m.closest(BLOCK);if(k&&el.contains(k)&&seen.indexOf(k)<0)seen.push(k)});
@@ -631,7 +632,7 @@ JS = """
     var box=document.createElement('div');box.className='md-toc';
     box.appendChild(document.createTextNode(T.sections+' ('+list.length+'):'));
     list.forEach(function(h){var t=document.createElement('button');t.type='button';
-      t.textContent=h?h.textContent:T.top;t.onclick=function(){scrollToEl(h||el)};box.appendChild(t)});
+      t.textContent=h?newText(h):T.top;t.onclick=function(){scrollToEl(h||el)};box.appendChild(t)});
     el.insertBefore(box,el.firstChild)}
   function renderMd(){if(rendered||!window.DVMarkdown)return;rendered=true;
     document.querySelectorAll('.md[data-src]').forEach(function(el){var id=el.getAttribute('data-src');

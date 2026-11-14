@@ -239,6 +239,19 @@ class Browser(unittest.TestCase):
         self.assertIn("Changed sections", dom)
         self.assertIn("Teil A", dom[dom.find("Changed sections"):])
 
+    def test_changed_sections_list_the_new_heading_only(self):
+        old = "# Plan\n\n## 5. Risks\n\nalt\n"
+        new = "# Plan\n\n## 6. Risks\n\nneu\n"
+        with tempfile.TemporaryDirectory() as d:
+            page = Path(d) / "p.html"
+            page.write_text(dv.render([dv.FileDiff("plan.md", old, new)], "t", "s"), encoding="utf-8")
+            res = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+                                  f"--user-data-dir={d}/profile", "--virtual-time-budget=3000", "--dump-dom",
+                                  page.as_uri() + "?md"], capture_output=True, text=True, timeout=60)
+            toc = res.stdout[res.stdout.find("Changed sections"):]
+        self.assertIn(">6. Risks</button>", toc)
+        self.assertNotIn("56. Risks", toc)
+
 
 if __name__ == "__main__":
     unittest.main()
