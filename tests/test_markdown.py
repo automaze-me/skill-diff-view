@@ -253,5 +253,45 @@ class Browser(unittest.TestCase):
         self.assertNotIn("56. Risks", toc)
 
 
+    WIDE = ("# Review\n\nText.\n\n| Nr. | Ort | Regel | Was der Code tut | Verlangt |\n|---|---|---|---|---|\n"
+            + "".join(f"| F{i} | `system/lib/Stbde/Service/OpenItem/InformService.php:{i}31–138` | §8: Schreibvorgänge "
+                      f"in `system/lib/Stbde/Service/OpenItem/MailReconciler.php:{i}2–40` | `send()` speichert zuerst "
+                      f"`system/lib/Stbde/Controller/Api/OpenItem/Mail.php:{i}7–91` | Zeile und Nachricht in einer "
+                      f"Transaktion |\n" for i in range(1, 4))
+            + "\n| a | b |\n|---|---|\n| kurz | auch kurz |\n")
+    PROBE = ("<script>setTimeout(function(){var t=document.querySelectorAll('.md table'),d=document.documentElement;"
+             "document.body.setAttribute('data-probe',JSON.stringify({vw:d.clientWidth,sw:d.scrollWidth,"
+             "tables:Array.prototype.map.call(t,function(x){return {cls:x.className,w:x.getBoundingClientRect().width,"
+             "cw:x.clientWidth,sw:x.scrollWidth,label:(x.querySelector('td')||{}).getAttribute('data-label')}}),"
+             "p:document.querySelector('.md p').getBoundingClientRect().width}))},500)</script></body>")
+
+    def probe(self, width):
+        with tempfile.TemporaryDirectory() as d:
+            page = Path(d) / "p.html"
+            html = dv.render([dv.FileDiff("review.md", None, self.WIDE)], "t", "s")
+            page.write_text(html.replace("</body>", self.PROBE), encoding="utf-8")
+            res = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+                                  f"--user-data-dir={d}/profile", f"--window-size={width},900", "--virtual-time-budget=3000",
+                                  "--dump-dom", page.as_uri() + "?md"], capture_output=True, text=True, timeout=60)
+        m = re.search(r'data-probe="([^"]*)"', res.stdout)
+        self.assertIsNotNone(m, res.stderr[-2000:])
+        return json.loads(m.group(1).replace("&quot;", '"').replace("&amp;", "&"))
+
+    def test_wide_table_uses_the_free_width_beside_the_text_column_and_does_not_scroll(self):
+        r = self.probe(1600)
+        wide = r["tables"][0]
+        self.assertNotIn("md-cards", wide["cls"])
+        self.assertLessEqual(wide["sw"], wide["cw"] + 1, r)
+        self.assertGreater(wide["w"], r["p"] + 100, r)
+
+    def test_wide_table_becomes_cards_on_a_phone_without_horizontal_scroll(self):
+        r = self.probe(500)
+        wide, small = r["tables"]
+        self.assertIn("md-cards", wide["cls"])
+        self.assertEqual(wide["label"], "Nr.")
+        self.assertLessEqual(wide["sw"], wide["cw"] + 1, r)
+        self.assertLessEqual(r["sw"], r["vw"], r)
+        self.assertNotIn("md-cards", small["cls"])
+
 if __name__ == "__main__":
     unittest.main()

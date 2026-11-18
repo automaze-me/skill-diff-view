@@ -39,7 +39,7 @@ diff-view answers that on one page. You read the marked words instead of rereadi
 ## What you get
 
 - **Word-level redline.** Only the words that changed light up, not whole lines.
-- **Reading view for Markdown.** The document typeset the way people will read it: additions underlined green, deletions struck red, the changed sections listed at the top.
+- **Reading view for Markdown.** The document typeset the way people will read it: additions underlined green, deletions struck red, the changed sections listed at the top. Tables use the full page width; on a phone, a table too wide for the screen shows one card per row.
 - **Inline or side by side.** Unchanged runs fold away, and `n` / `p` jump from change to change.
 - **Whole folders.** A file tree beside the diff, with filters for new, changed and deleted files.
 - **The agent's own answers.** "What changed between your last two answers?" works as well as files and branches.
